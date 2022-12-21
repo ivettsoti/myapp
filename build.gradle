@@ -41,6 +41,6 @@ micronaut {
 }
 
 dockerBuild {
-    images = ["ivettsoti/myapp:$project.version"]
+    images = ["ivettsoti/myapp"]
 }
 
