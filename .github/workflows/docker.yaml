@@ -1,32 +1,37 @@
-name: Docker
-
-on:
-  push:
-    tags: ["v*.*.*"]
-
-env:
-  IMAGE_NAME: ivettsoti/myapp
+on: [push]
+name: Build and Publish Image
 
 jobs:
-  build:
-    name: Build container image
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-      - name: Get tag
-        id: tag
-        uses: dawidd6/action-get-tag@v1
-      - name: Log into registry
-        uses: docker/login-action@v1
+      # checkout the repo
+      - name: 'Checkout GitHub Action'
+        uses: actions/checkout@master
+
+      - name: 'Login via Azure CLI'
+        uses: azure/login@v1
         with:
-          registry: ${{ secrets.ACR_ENDPOINT }}
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: 'Build and push image'
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ secrets.ACR_ENDPOINT }}
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
-      - name: Build & Push
-        uses: docker/build-push-action@v2
+      - run: |
+          docker build . -t ${{ secrets.ACR_ENDPOINT }}/myapp:${{ github.sha }}
+          docker push ${{ secrets.ACR_ENDPOINT }}/myapp:${{ github.sha }}
+
+      - name: 'Deploy to Azure Container Instances'
+        uses: 'azure/aci-deploy@v1'
         with:
-          push: true
-          build-args: |
-            version=${{ steps.tag.outputs.tag }}
-          tags: ${{ secrets.ACR_ENDPOINT }}/${{ env.IMAGE_NAME }}:${{ steps.tag.outputs.tag }}
+          resource-group: ${{ secrets.RESOURCE_GROUP }}
+          dns-name-label: ${{ secrets.RESOURCE_GROUP }}${{ github.run_number }}
+          image: ${{ secrets.ACR_ENDPOINT }}/myapp:${{ github.sha }}
+          registry-login-server: ${{ secrets.ACR_ENDPOINT }}
+          registry-username: ${{ secrets.ACR_USERNAME }}
+          registry-password: ${{ secrets.ACR_PASSWORD }}
+          name: myapp
+          location: 'east us'
