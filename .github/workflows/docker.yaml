@@ -21,9 +21,10 @@ jobs:
           username: ${{ secrets.ACR_USERNAME }}
           password: ${{ secrets.ACR_PASSWORD }}
       - run: |
-          ./gradlew dockerPush
-#          docker build . -t ${{ secrets.ACR_ENDPOINT }}/myapp:${{ github.sha }}
-#          docker push ${{ secrets.ACR_ENDPOINT }}/myapp:${{ github.sha }}
+#          ./gradlew build test assemble
+          ./gradlew assemble
+          docker build . -t ${{ secrets.ACR_ENDPOINT }}/myapp:${{ github.sha }}
+          docker push ${{ secrets.ACR_ENDPOINT }}/myapp:${{ github.sha }}
 
 #      - name: 'Deploy to Azure Container Instances'
 #        uses: 'azure/aci-deploy@v1'
